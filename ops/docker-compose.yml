@@ -1,0 +1,107 @@
+# ops/docker-compose.yml
+
+
+services:
+  # Serviço do Backend (API FastAPI)
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: juribot-api
+    # O comando para iniciar a API com Uvicorn, permitindo recarga automática
+    command: uvicorn app_main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      # Mapeia o código do backend para dentro do container para refletir mudanças ao vivo
+      - ../backend:/app
+      # Mapeia a pasta de dados para que a API possa acessá-la para ingestão
+      - ../data:/app/data
+    ports:
+      # Expõe a porta 8000 do container para a porta 8000 da máquina host
+      - "8000:8000"
+    env_file:
+      # Carrega as variáveis de ambiente do arquivo .env na raiz do projeto
+      - ../.env
+    depends_on:
+      # A API só iniciará depois que o Qdrant e o Redis estiverem prontos
+      - qdrant
+      - redis
+    networks:
+      - juribot-net
+
+  # Serviço do Frontend (Next.js)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: juribot-frontend
+    # O comando para iniciar o servidor de desenvolvimento do Next.js
+    command: npm run dev
+    volumes:
+      # Mapeia o código do frontend para refletir mudanças ao vivo
+      - ../frontend:/app
+      # Evita que a pasta node_modules local seja mapeada, usando a do container
+      - /app/node_modules
+    ports:
+      # Expõe a porta 3000 do container para a porta 3000 da máquina host
+      - "3000:3000"
+    networks:
+      - juribot-net
+    depends_on:
+      - api
+
+  # Serviço do Banco de Dados Vetorial
+  qdrant:
+    image: qdrant/qdrant:v1.9.2
+    container_name: juribot-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      # Garante que os dados do Qdrant persistam mesmo se o container for recriado
+      - qdrant_data:/qdrant/storage
+    networks:
+      - juribot-net
+
+  # Serviço de Cache e Memória de Conversa
+  redis:
+    image: redis:7.2-alpine
+    container_name: juribot-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      # Garante que os dados do Redis persistam
+      - redis_data:/data
+    networks:
+      - juribot-net
+
+# --- Opcional: Serviço de Busca Lexical (BM25) ---
+# Descomente o serviço abaixo se USE_OPENSEARCH=true no seu .env
+#  opensearch:
+#    image: opensearchproject/opensearch:2.12.0
+#    container_name: juribot-opensearch
+#    environment:
+#      - discovery.type=single-node
+#      - bootstrap.memory_lock=true
+#      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m" # Ajuste a memória conforme necessário
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
+#    ports:
+#      - "9200:9200"
+#      - "9600:9600"
+#    volumes:
+#      - opensearch_data:/usr/share/opensearch/data
+#    networks:
+#      - juribot-net
+
+# Define a rede que permitirá a comunicação entre os containers
+networks:
+  juribot-net:
+    driver: bridge
+
+# Define os volumes para persistência de dados
+volumes:
+  qdrant_data:
+  redis_data:
+#  opensearch_data: # Descomente se usar OpenSearch

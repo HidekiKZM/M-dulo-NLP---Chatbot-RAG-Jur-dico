@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Juribot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose p { margin-bottom: .75rem; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-5xl mx-auto py-8 px-4">
+    <header class="mb-6">
+      <h1 class="text-2xl font-bold tracking-tight">Juribot</h1>
+      <p class="text-gray-600">Pergunte com base nos documentos indexados e veja as fontes.</p>
+    </header>
+
+    <section class="bg-white rounded-2xl shadow p-5 space-y-4">
+      <div class="grid md:grid-cols-12 gap-3">
+        <div class="md:col-span-9">
+          <label class="text-sm text-gray-600">Pergunta</label>
+          <textarea id="question" rows="4" class="w-full mt-1 rounded-xl border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Ex.: Qual é o prazo de arrependimento no e-commerce segundo o CDC?"></textarea>
+        </div>
+        <div class="md:col-span-3">
+          <label class="text-sm text-gray-600">Top-K (fontes)</label>
+          <input id="topk" type="number" min="1" max="10" value="6" class="w-28 mt-1 rounded-xl border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+          <div class="mt-4">
+            <button id="askBtn" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Perguntar
+            </button>
+          </div>
+          <p id="status" class="text-sm text-gray-500 mt-4"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="result" class="mt-6 hidden space-y-6">
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="font-semibold mb-2">Resposta</h2>
+        <div id="answer" class="prose"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="font-semibold mb-3">Fontes</h2>
+        <div id="sources" class="space-y-4"></div>
+      </div>
+    </section>
+
+    <footer class="mt-10 text-xs text-gray-500">
+      <p>Juribot • demo local • <span class="mono">/chat</span> via FastAPI</p>
+    </footer>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    }
+
+    function renderSources(list) {
+      const wrap = el('sources');
+      wrap.innerHTML = '';
+      if (!list || !list.length) { wrap.innerHTML = '<p class="text-gray-500">Sem fontes.</p>'; return; }
+      list.forEach((s, idx) => {
+        const uri = s.uri || '';
+        const page = (s.page ?? '') !== '' ? `p.${s.page}` : '';
+        const title = s.title || uri.split('/').pop() || 'Fonte';
+        const snippet = (s.snippet || '').slice(0, 600);
+        const card = document.createElement('div');
+        card.className = 'border rounded-xl p-4';
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div class="font-medium"><span class="text-emerald-600">[${idx+1}]</span> ${escapeHtml(title)} <span class="text-gray-500 text-sm">${escapeHtml(page)}</span></div>
+            ${uri ? `<a class="text-emerald-700 hover:underline text-sm" href="${encodeURI(uri)}" target="_blank" rel="noreferrer">abrir</a>` : ''}
+          </div>
+          <p class="text-gray-700 mt-2 whitespace-pre-wrap">${escapeHtml(snippet)}</p>
+          ${uri ? `<div class="text-xs text-gray-500 mt-1 mono break-all">${escapeHtml(uri)}</div>` : ''}
+        `;
+        wrap.appendChild(card);
+      });
+    }
+
+    function linkifyCitations(answer, sourcesLen) {
+      // transforma [1], [2]... em âncoras
+      return answer.replace(/\[(\d+)\]/g, (m, n) => {
+        const i = parseInt(n,10);
+        if (i>=1 && i<=sourcesLen) {
+          return `<a href="#src-${i}" class="text-emerald-700 underline">[${i}]</a>`;
+        }
+        return m;
+      });
+    }
+
+    async function ask() {
+      const q = el('question').value.trim();
+      const topk = Math.max(1, Math.min(10, parseInt(el('topk').value || '6', 10)));
+      if (!q) { el('status').textContent = 'Digite uma pergunta.'; return; }
+
+      el('status').textContent = 'Consultando...';
+      el('askBtn').disabled = true;
+
+      try {
+        const resp = await fetch('/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ question: q, top_k: topk })
+        });
+        if (!resp.ok) throw new Error('Falha na requisição');
+        const data = await resp.json();
+
+        const sources = data.sources || [];
+        const answerHtml = linkifyCitations((data.answer || '').replace(/\n/g, '<br>'), sources.length);
+        el('answer').innerHTML = answerHtml || '<span class="text-gray-500">Sem resposta da LLM. Veja as fontes abaixo.</span>';
+
+        // render fontes e adicionar ids para âncoras [1] [2]...
+        renderSources(sources);
+        // coloca ids nos cartões para âncoras
+        Array.from(el('sources').children).forEach((div, i) => div.id = `src-${i+1}`);
+
+        el('result').classList.remove('hidden');
+        el('status').textContent = 'Pronto.';
+      } catch (e) {
+        console.error(e);
+        el('status').textContent = 'Erro ao consultar.';
+        alert('Erro ao consultar o /chat. Veja o console.');
+      } finally {
+        el('askBtn').disabled = false;
+      }
+    }
+
+    el('askBtn').addEventListener('click', ask);
+    el('question').addEventListener('keydown', (ev) => {
+      if (ev.ctrlKey && ev.key === 'Enter') ask();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+# ==========================================
+# Juribot - .gitignore
+# Projeto FastAPI + Qdrant + Gemini + UI
+# ==========================================
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+*.pyo
+*.pyc
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+wheels/
+MANIFEST
+*.manifest
+*.spec
+*.log
+
+# ---- Virtual Environments ----
+.env
+.env.*
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# ---- Node / Frontend ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnp/
+.pnp.js
+# Build outputs
+.next/
+out/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# ---- IDE / Editor ----
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ---- Test / Coverage ----
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+pytest_cache/
+.hypothesis/
+nosetests.xml
+coverage.xml
+*.cover
+htmlcov/
+
+# ---- OS / Misc ----
+.DS_Store
+Thumbs.db
+desktop.ini
+__MACOSX/
+*.bak
+*.tmp
+
+# ---- Docker ----
+**/.dockerignore
+docker-compose.override.yml
+.docker/
+*.tar
+
+# ---- Secrets & Environment ----
+# ⚠️ Nunca comitar chaves de API ou .env reais
+.env
+.env.local
+.env.production
+.env.development
+*.env
+secrets/
+**/secrets.*
+.envrc
+
+# ---- Dados locais e índices ----
+# pastas geradas durante ingestão ou indexação
+backend/data/
+backend/indexes/
+backend/uploads/
+backend/tmp/
+backend/cache/
+backend/logs/
+*.db
+*.sqlite
+*.jsonl
+
+# ---- Frontend UI ----
+backend/ui/node_modules/
+backend/ui/dist/
+backend/ui/.next/
+backend/ui/build/
+backend/ui/.cache/
+backend/ui/*.log
+
+# ---- Outros temporários ----
+*.pid
+*.seed
+*.bak
+*.orig
+*.rej
+
+# ---- Sistema de arquivos ----
+ehthumbs.db
+Icon?
+Network Trash Folder
+Temporary Items
+.Trashes
+
+# ==========================================
+# Itens opcionais versionáveis
+# (Remova "#" se quiser manter vazio no repo)
+# ==========================================
+# backend/data/.gitkeep
+# backend/indexes/.gitkeep
+# backend/ui/.gitkeep
