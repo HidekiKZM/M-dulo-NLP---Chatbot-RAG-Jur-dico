@@ -1,39 +1,31 @@
-🧩 Visão Geral
+# ⚖️ Juribot — Assistente Jurídico com RAG e Busca Semântica
 
-O Juribot é um assistente jurídico inteligente baseado em busca semântica e geração aumentada por recuperação (RAG).
-Este projeto integra técnicas avançadas de Processamento de Linguagem Natural (NLP) com armazenamento vetorial para permitir consultas contextuais sobre documentos jurídicos, produzindo respostas precisas e fundamentadas.
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi)
+![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20DB-red?logo=qdrant)
+![Docker](https://img.shields.io/badge/Docker-Supported-blue?logo=docker)
 
-O projeto foi desenvolvido no contexto da especialização em Inteligência Artificial, como parte do módulo de NLP (Natural Language Processing).
+Assistente jurídico inteligente baseado em **Busca Semântica** e **Geração Aumentada por Recuperação (RAG)**. O projeto integra técnicas de NLP e banco de dados vetorial para consultas contextualizadas em documentos jurídicos.
 
-┌────────────────────────┐
-│        Usuário         │
-│   (interface ou API)   │
-└────────────┬───────────┘
-             │
-             ▼
-┌────────────────────────┐
-│       FastAPI API       │
-│  - Recebe consultas     │
-│  - Chama o módulo NLP   │
-└────────────┬───────────┘
-             │
-             ▼
-┌────────────────────────┐
-│  Sentence Transformers  │
-│  - Gera embeddings sem. │
-│  - Representa textos    │
-└────────────┬───────────┘
-             │
-             ▼
-┌────────────────────────┐
-│        Qdrant DB        │
-│ - Armazena vetores      │
-│ - Realiza busca semânt. │
-└────────────┬───────────┘
-             │
-             ▼
-┌────────────────────────┐
-│      Gerador RAG       │
-│ - Recupera contexto     │
-│ - Gera resposta final   │
-└────────────────────────┘
+---
+
+## 🛠️ Tecnologias e Ferramentas
+
+| Componente | Tecnologia | Função no Sistema |
+| :--- | :--- | :--- |
+| **Framework Web** | FastAPI | Exposição da API RESTful para recebimento de consultas |
+| **Embeddings** | Sentence Transformers | Vetorização e representação semântica dos textos |
+| **Vector Database** | Qdrant DB | Armazenamento e busca por similaridade vetorial |
+| **Pipeline RAG** | Python / LLM | Recuperação de contexto e geração de resposta fundamentada |
+
+---
+
+## 🏗️ Arquitetura do Sistema
+
+```mermaid
+graph TD
+    A[👤 Usuário / Interface / API] -->|Envia consulta| B[⚡ FastAPI API]
+    B -->|Processa texto| C[🧠 Sentence Transformers]
+    C -->|Gera embeddings semânticos| D[(🗄️ Qdrant DB)]
+    D -->|Realiza busca por similaridade| E[🔍 Gerador RAG]
+    E -->|Recupera contexto & gera resposta| A
